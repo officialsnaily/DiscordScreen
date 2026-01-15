@@ -30,12 +30,12 @@ on('DiscordScreen:executeJS_Upload', (webhookUrl, base64Data, embedJson) => {
             method: 'POST',
             headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}`, 'Content-Length': bodyBuffer.length }
         }, (res) => {
-            // FIX: We accepteren nu 200 én 204 als succes, dus geen spam meer.
+            
             if (res.statusCode === 200 || res.statusCode === 204) {
-               // console.log(`^2[DiscordScreen] Upload Success!^7`); // Uncomment als je toch een bevestiging wilt
+               // console.log(`^2[DiscordScreen] Upload Success!^7`); // Uncomment if you really want a confirmation
             } else {
                 console.log(`^1[DiscordScreen] Error: Discord returned status ${res.statusCode}^7`);
-                res.on('data', d => process.stdout.write(d)); // Print alleen error details
+                res.on('data', d => process.stdout.write(d)); 
             }
         });
 
