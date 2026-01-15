@@ -4,7 +4,10 @@
 
 -- ADD YOUR DISCORD WEBHOOK HERE
 local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/YOUR_WEBHOOK_HERE"
-local CURRENT_VERSION = "1.1.1" 
+
+-- CONFIGURATION FOR VERSION CHECK
+local UPDATE_URL = "https://snai.ly/discordscreenversion"
+local INFO_LINK = "https://snai.ly/discordscreen"
 
 local screenshotCounts = {}
 local lastScreenshotTime = {}
@@ -17,7 +20,7 @@ RegisterCommand("screen", function(source, args)
 
     if not target then print("^1[DiscordScreen] Invalid ID.^7") return end
 
-    -- if lastScreenshotTime[target] and (os.time() - lastScreenshotTime[target]) < 10 then ... end
+    -- Update timestamp for cooldowns
     lastScreenshotTime[target] = os.time()
 
     if target == -1 then
@@ -36,7 +39,6 @@ RegisterNetEvent("DiscordScreen:receiveData")
 AddEventHandler("DiscordScreen:receiveData", function(data, playerName, playerId, requesterName, requesterId, coords, health, armor, vehInfo, reason)
     print("^2[DiscordScreen] Server: Data received from ID " .. playerId .. ". Size: " .. string.len(data) .. " chars.^7")
 
-    -- Check if data is too small (fail)
     if string.len(data) < 100 then
         print("^1[DiscordScreen] Server: Data too small, upload aborted.^7")
         return
@@ -49,7 +51,6 @@ AddEventHandler("DiscordScreen:receiveData", function(data, playerName, playerId
         local id = GetPlayerIdentifier(playerId, i)
         if not id:find("^ip:") then table.insert(identifiers, id) end
     end
-    local idString = table.concat(identifiers, "\n")
     local ping = GetPlayerPing(playerId)
 
     local embedData = {
@@ -62,9 +63,57 @@ AddEventHandler("DiscordScreen:receiveData", function(data, playerName, playerId
             { name = "Reason", value = string.format("```%s```", reason or "N/A"), inline = false },
         },
         image = { url = "attachment://screenshot.jpg" },
-        footer = { text = "System by Team Snaily" }
+        footer = { text = "System by Snaily Labs" }
     }
 
     print("^3[DiscordScreen] Server: Handing over to JS uploader...^7")
     TriggerEvent("DiscordScreen:executeJS_Upload", DISCORD_WEBHOOK, data, embedData)
+end)
+
+-- ---------------------------------------------------------
+-- Snaily Labs Version Checker & Startup Print
+-- ---------------------------------------------------------
+Citizen.CreateThread(function()
+    Citizen.Wait(1000) -- Wait for console to settle
+
+    local resourceName = GetCurrentResourceName()
+    local currentVersion = GetResourceMetadata(resourceName, 'version', 0) or 'Unknown'
+    
+    -- Function to print the logo
+    local function PrintLogo(subtitle)
+        local snailyArt = [[
+^2
+      ^7(O)  (O)^2
+        \  /
+       __\/__       ^3_____
+      /  ^7U^2   \     ^3/     \    ^4SNAILY LABS
+     (        )___^3(       )   ^7DiscordScreen
+      \_______/   ^3 \_____/    ^7v]] .. currentVersion .. [[^2
+^0
+    ]]
+        print(snailyArt)
+        if subtitle then print(subtitle) end
+    end
+
+    -- Perform the version check
+    PerformHttpRequest(UPDATE_URL, function(err, text, headers)
+        local latestVersion = text and text:gsub("%s+", "") or nil -- Trim whitespace
+
+        if err == 200 and latestVersion then
+            if currentVersion ~= latestVersion then
+                -- UPDATE AVAILABLE
+                PrintLogo('^1[UPDATE] New version available: ' .. latestVersion .. '!^7')
+                print('^1---------------------------------------------------^7')
+                print('^1Please download the update at:^7')
+                print('^4' .. INFO_LINK .. '^7')
+                print('^1---------------------------------------------------^0')
+            else
+                -- UP TO DATE
+                PrintLogo('^4[Snaily Labs] ^7DiscordScreen is up to date and ready to roll!^0')
+            end
+        else
+            -- CHECK FAILED
+            PrintLogo('^3[Snaily Labs] ^7Could not check for updates (Offline?).^0')
+        end
+    end, "GET", "", {})
 end)
