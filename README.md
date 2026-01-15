@@ -7,18 +7,18 @@ A FiveM resource that allows admins to request player screenshots and sends deta
 
 ## Features
 
+- **🛡️ Secure Server-Side Uploads:**
+  Webhooks are handled entirely on the server. No client-side exposure.
 - **Admin Screenshot Command:**  
   Use `/screen [playerId] [reason]` to request a screenshot from a specific player or all players.
-- **Discord Webhook Integration:**  
-  Sends screenshots and detailed player info (identifiers, health, armor, location, vehicle, etc.) to your Discord server.
+- **Rich Discord Integration:**
+  Sends the screenshot as an image attachment along with detailed player info (identifiers, health, armor, location, vehicle, etc.).
+- **Direct Binary Upload:**
+  Does not rely on Imgur or external APIs that might block FiveM servers.
 - **Cooldown System:**  
   Prevents screenshot spam by enforcing a configurable cooldown per player.
-- **Easy Configuration:**  
-  All settings are managed in a single `config.lua` file.
 - **Vehicle & Player Info:**  
   Captures vehicle details, coordinates, and more for context.
-- **Modular & Open Source:**  
-  MIT licensed and ready for community contributions.
 
 ---
 
@@ -33,17 +33,21 @@ A FiveM resource that allows admins to request player screenshots and sends deta
    Place the `DiscordScreen` folder in your server's `resources` directory.
 
 3. **Configure the Script**
-   - Open `config.lua` and set your Discord webhook URL:
+   - Open `server.lua`.
+   - Locate the `DISCORD_WEBHOOK` variable at the top of the file.
+   - Replace the placeholder with your actual Discord Webhook URL.
      ```lua
      Config.DISCORD_WEBHOOK = "https://discord.com/api/webhooks/....."
      ```
-   - Adjust other settings as needed (embed title, cooldown, etc.).
 
-4. **Ensure Dependency**
+4. **Adjust settings**
+   - Open config.lua to change the embed title or cooldowns. Do not put your webhook here.
+
+5. **Ensure Dependency**
    - This script requires [screenshot-basic](https://github.com/citizenfx/screenshot-basic).  
      Make sure it is installed and started before this resource.
 
-5. **Add to server.cfg**
+6. **Add to server.cfg**
    ```
    ensure screenshot-basic
    ensure DiscordScreen
@@ -60,18 +64,17 @@ A FiveM resource that allows admins to request player screenshots and sends deta
 
 - **Permissions:**  
   The command requires the `command.screen` ace permission.
-
+```
+add_ace group.admin command.screen allow
+```
 ---
 
 ## Configuration
 
-Edit `config.lua` to change webhook, embed title, and cooldown:
+`config.lua` (General Settings)
 
 ```lua
 Config = {}
-
--- Discord webhook URL
-Config.DISCORD_WEBHOOK = "https://discord.com/api/webhooks/your_webhook_url"
 
 -- Title for the Discord embed
 Config.EMBED_TITLE = "Player Screenshot"
@@ -79,21 +82,26 @@ Config.EMBED_TITLE = "Player Screenshot"
 -- Cooldown in seconds between screenshots per player
 Config.SCREENSHOT_COOLDOWN = 10
 ```
-
+`server.lua` (Sensitive Data)
+```
+-- SET YOUR WEBHOOK HERE
+local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/..."
+```
 ---
 
 ## File Structure
 
 - `fxmanifest.lua` – Resource manifest
-- `config.lua` – Configuration file
-- `server.lua` – Server-side logic (commands, Discord integration)
-- `client.lua` – Client-side logic (gathering info, taking screenshots)
+- `config.lua` – General configuration (Client Safe)
+- `server.lua` – Server-side logic & Webhook configuration
+- `server_upload.lua` – [NEW] Node.js helper for binary image uploading
+- `client.lua` – Client-side logic (gathering info, capturing raw data)
 
 ---
 
 ## Roadmap & Notice
 
-> **This script is in its early stages.**  
+> **This script is in active development.**  
 > Functionality, structure, and performance may change at any time.  
 > Features may be added, removed, or optimized as development continues.  
 > Contributions and suggestions are welcome!
