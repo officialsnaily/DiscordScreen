@@ -1,7 +1,6 @@
 Config = {}
 
--- Discord webhook URL
-Config.DISCORD_WEBHOOK = "https://discord.com/api/webhooks/your_webhook_url"
+-- NOTE: The Webhook URL has been moved to server.lua for security reasons!
 
 -- Title for the Discord embed
 Config.EMBED_TITLE = "Player Screenshot"
