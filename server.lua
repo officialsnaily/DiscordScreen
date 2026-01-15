@@ -1,5 +1,6 @@
 --[[
     DiscordScreen - Server Script
+    Author: Snaily Labs
 ]]
 
 -- ADD YOUR DISCORD WEBHOOK HERE
@@ -14,23 +15,38 @@ local lastScreenshotTime = {}
 
 RegisterCommand("screen", function(source, args)
     local target = tonumber(args[1])
-    local reason = table.concat(args, " ", 2)
+    
+    -- FIX: Check if reason is empty string, set to nil if so
+    local rawReason = table.concat(args, " ", 2)
+    local reason = (rawReason and rawReason ~= "") and rawReason or "No reason specified"
+
     local requesterName = source > 0 and GetPlayerName(source) or "Console"
     local requesterId = source > 0 and source or 0
 
-    if not target then print("^1[DiscordScreen] Invalid ID.^7") return end
+    if not target then 
+        print("^1[DiscordScreen] Invalid ID. Usage: /screen [id] [reason]^7") 
+        return 
+    end
 
-    -- Update timestamp for cooldowns
+    -- Update timestamp for cooldown tracking
     lastScreenshotTime[target] = os.time()
 
+    -- ID -1: Request screenshot for ALL players
     if target == -1 then
-        for _, playerId in ipairs(GetPlayers()) do
-            TriggerClientEvent("DiscordScreen:take", tonumber(playerId), requesterName, requesterId, reason)
-        end
-        print("^3[DiscordScreen] Requested all players.^7")
+        print("^3[DiscordScreen] Starting batch request for ALL players... (Throttled)^7")
+        
+        Citizen.CreateThread(function()
+            local players = GetPlayers()
+            for _, playerId in ipairs(players) do
+                TriggerClientEvent("DiscordScreen:take", tonumber(playerId), requesterName, requesterId, reason)
+                Citizen.Wait(500) -- Stagger requests to prevent lag
+            end
+            print("^2[DiscordScreen] Batch request sent to " .. #players .. " players.^7")
+        end)
         return
     end
 
+    -- Single ID request
     TriggerClientEvent("DiscordScreen:take", target, requesterName, requesterId, reason)
     print("^3[DiscordScreen] Request sent to ID: " .. target .. "^7")
 end, true)
@@ -53,14 +69,15 @@ AddEventHandler("DiscordScreen:receiveData", function(data, playerName, playerId
     end
     local ping = GetPlayerPing(playerId)
 
+    -- Construct the Discord Embed
     local embedData = {
         title = Config.EMBED_TITLE,
-        color = 65280,
+        color = 65280, -- Green
         fields = {
             { name = "Player", value = string.format("```%s (ID: %s)```", playerName, playerId), inline = true },
             { name = "Requested By", value = string.format("```%s (ID: %s)```", requesterName, requesterId), inline = true },
             { name = "Details", value = string.format("Ping: %s\nVeh: %s", ping, vehInfo), inline = false },
-            { name = "Reason", value = string.format("```%s```", reason or "N/A"), inline = false },
+            { name = "Reason", value = string.format("```%s```", reason), inline = false },
         },
         image = { url = "attachment://screenshot.jpg" },
         footer = { text = "System by Snaily Labs" }
@@ -74,12 +91,11 @@ end)
 -- Snaily Labs Version Checker & Startup Print
 -- ---------------------------------------------------------
 Citizen.CreateThread(function()
-    Citizen.Wait(1000) -- Wait for console to settle
+    Citizen.Wait(1000)
 
     local resourceName = GetCurrentResourceName()
     local currentVersion = GetResourceMetadata(resourceName, 'version', 0) or 'Unknown'
     
-    -- Function to print the logo
     local function PrintLogo(subtitle)
         local snailyArt = [[
 ^2
@@ -95,24 +111,20 @@ Citizen.CreateThread(function()
         if subtitle then print(subtitle) end
     end
 
-    -- Perform the version check
     PerformHttpRequest(UPDATE_URL, function(err, text, headers)
-        local latestVersion = text and text:gsub("%s+", "") or nil -- Trim whitespace
+        local latestVersion = text and text:gsub("%s+", "") or nil 
 
         if err == 200 and latestVersion then
             if currentVersion ~= latestVersion then
-                -- UPDATE AVAILABLE
                 PrintLogo('^1[UPDATE] New version available: ' .. latestVersion .. '!^7')
                 print('^1---------------------------------------------------^7')
                 print('^1Please download the update at:^7')
                 print('^4' .. INFO_LINK .. '^7')
                 print('^1---------------------------------------------------^0')
             else
-                -- UP TO DATE
                 PrintLogo('^4[Snaily Labs] ^7DiscordScreen is up to date and ready to roll!^0')
             end
         else
-            -- CHECK FAILED
             PrintLogo('^3[Snaily Labs] ^7Could not check for updates (Offline?).^0')
         end
     end, "GET", "", {})
