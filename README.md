@@ -116,7 +116,7 @@ MIT License
 
 ## Credits
 
-- [Team Snaily](https://snai.ly/team) & [Anton's Workshop](https://discord.gg/hdjbqaazhg) – Original authors
+- [Snaily Games](https://snaily.games) & [Anton's Workshop](https://discord.gg/hdjbqaazhg) – Original authors
 - [screenshot-basic](https://github.com/citizenfx/screenshot-basic) – Screenshot utility
 
 ---
